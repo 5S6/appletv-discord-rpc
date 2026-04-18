@@ -124,6 +124,8 @@ await setupAutostart(client.kv);
 await client.run();
 
 async function setupAutostart(kv: Deno.Kv): Promise<void> {
+  if (!isInteractiveTerminal()) return;
+
   const seen = await kv.get(["asked_autostart"]);
   if (seen.value) return;
   await kv.set(["asked_autostart"], true);
@@ -188,6 +190,10 @@ async function setupAutostart(kv: Deno.Kv): Promise<void> {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function isInteractiveTerminal(): boolean {
+  return Deno.stdin.isTerminal() && Deno.stdout.isTerminal() && Deno.stderr.isTerminal();
 }
 
 // discord requires 2-128 chars

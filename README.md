@@ -24,9 +24,11 @@ first run will ask if you want it to auto-start on login.
 
 ```bash
 brew tap 5S6/appletv-discord-rpc
-brew install appletv-discord-rpc
+brew install --HEAD appletv-discord-rpc
 brew services start appletv-discord-rpc
 ```
+
+`--HEAD` is the current source from this repo, which is what you want until the next tagged release is published.
 
 ## remove autostart
 

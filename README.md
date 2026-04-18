@@ -20,10 +20,10 @@ deno run --allow-env --allow-run --allow-net --allow-read --allow-write --allow-
 
 first run will ask if you want it to auto-start on login.
 
-## install via homebrew (coming soon)
+## install via homebrew
 
 ```bash
-brew tap alekisok/appletv-discord-rpc
+brew tap 5S6/appletv-discord-rpc
 brew install appletv-discord-rpc
 brew services start appletv-discord-rpc
 ```

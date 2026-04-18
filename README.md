@@ -30,7 +30,15 @@ brew services start appletv-discord-rpc
 
 `--HEAD` is the current source from this repo, which is what you want until the next tagged release is published.
 
-## remove autostart
+## stop / remove autostart
+
+if installed via homebrew:
+
+```bash
+brew services stop appletv-discord-rpc
+```
+
+if running manually (not via homebrew):
 
 ```bash
 launchctl unload ~/Library/LaunchAgents/com.appletv-discord-rpc.plist

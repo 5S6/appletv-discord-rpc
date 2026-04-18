@@ -114,6 +114,7 @@ class AppleTVDiscordRPC {
 
     const url = await fetchArtwork(title);
     this.artworkCache.set(title, url);
+    
     if (url) await this.kv.set(["artwork", title], url);
     return url;
   }
@@ -125,6 +126,7 @@ await client.run();
 
 async function setupAutostart(kv: Deno.Kv): Promise<void> {
   if (!isInteractiveTerminal()) return;
+  if (Deno.env.get("HOMEBREW_MANAGED")) return;
 
   const seen = await kv.get(["asked_autostart"]);
   if (seen.value) return;

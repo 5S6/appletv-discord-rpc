@@ -126,7 +126,32 @@ await client.run();
 
 async function setupAutostart(kv: Deno.Kv): Promise<void> {
   if (!isInteractiveTerminal()) return;
-  if (Deno.env.get("HOMEBREW_MANAGED")) return;
+
+  if (Deno.env.get("HOMEBREW_MANAGED")) {
+    const check = await new Deno.Command("launchctl", {
+      args: ["list", "homebrew.mxcl.appletv-discord-rpc"],
+      stderr: "null",
+      stdout: "null",
+    }).output();
+    if (check.success) return;
+
+    const seen = await kv.get(["asked_brew_service"]);
+    if (seen.value) return;
+    await kv.set(["asked_brew_service"], true);
+
+    const answer = prompt("add to login items so it runs on startup? (y/n):");
+    if (answer?.toLowerCase() !== "y") return;
+
+    const result = await new Deno.Command("brew", {
+      args: ["services", "start", "appletv-discord-rpc"],
+    }).output();
+    if (result.success) {
+      console.log("enabled — will start automatically on login");
+    } else {
+      console.log("run manually: brew services start appletv-discord-rpc");
+    }
+    return;
+  }
 
   const seen = await kv.get(["asked_autostart"]);
   if (seen.value) return;

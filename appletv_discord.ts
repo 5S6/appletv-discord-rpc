@@ -70,7 +70,7 @@ class AppleTVDiscordRPC {
       return TIMEOUT;
     }
 
-    const { title, duration, position, genre, year } = state;
+    const { title, duration, position, genre, year, show, seasonNumber, episodeNumber, episodeID } = state;
 
     let delta: number | undefined;
     let start: number | undefined;
@@ -81,24 +81,39 @@ class AppleTVDiscordRPC {
       start = Math.ceil(Date.now() - position * 1000);
     }
 
-    const artwork = await this.getArtwork(title);
+    const isShow = !!show;
 
-    const sub = [genre, year].filter(Boolean).join(" • ");
+    let details: string;
+    let sub: string;
+    let artworkQuery: string;
+
+    if (isShow) {
+      details = title;
+      const epTag = episodeID || formatEpisodeTag(seasonNumber, episodeNumber);
+      sub = epTag ? `${show} • ${epTag}` : show;
+      artworkQuery = show;
+    } else {
+      details = title;
+      sub = [genre, year].filter(Boolean).join(" • ");
+      artworkQuery = title;
+    }
+
+    const artwork = await this.getArtwork(artworkQuery);
 
     const activity: Activity = {
       // @ts-ignore type 3 = watching
       type: 3,
-      details: clamp(title),
+      details: clamp(details),
       state: sub ? clamp(sub) : undefined,
       timestamps: { start, end },
       assets: {
         large_image: artwork ?? "appletv",
-        large_text: clamp(title),
+        large_text: clamp(isShow ? show : title),
       },
     };
 
     await this.rpc.setActivity(activity);
-    console.log("playing:", title, sub);
+    console.log("playing:", isShow ? `${show} - ${title}` : title, sub);
 
     return Math.min((delta ?? TIMEOUT) + 1000, TIMEOUT);
   }
@@ -215,6 +230,12 @@ async function setupAutostart(kv: Deno.Kv): Promise<void> {
   console.log("to remove: launchctl unload", plistPath);
 }
 
+function formatEpisodeTag(season: number, episode: number): string {
+  if (!season && !episode) return "";
+  if (!season) return `E${String(episode).padStart(2, "0")}`;
+  return `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`;
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -244,6 +265,10 @@ interface TVState {
   duration: number;
   genre: string;
   year: number;
+  show: string;
+  seasonNumber: number;
+  episodeNumber: number;
+  episodeID: string;
 }
 
 async function getTVState(): Promise<TVState | null> {
@@ -260,12 +285,21 @@ async function getTVState(): Promise<TVState | null> {
       let genre = "";
       let year = 0;
 
+      let show = "";
+      let seasonNumber = 0;
+      let episodeNumber = 0;
+      let episodeID = "";
+
       try {
         const track = tv.currentTrack();
         title = track.name() || title;
         duration = track.duration() || 0;
         genre = track.genre() || "";
         year = track.year() || 0;
+        show = track.show() || "";
+        seasonNumber = track.seasonNumber() || 0;
+        episodeNumber = track.episodeNumber() || 0;
+        episodeID = track.episodeID() || "";
       } catch {
         // streaming/drm content won't have track metadata, fall back to window title
         try {
@@ -274,7 +308,7 @@ async function getTVState(): Promise<TVState | null> {
         } catch { /* nothing we can do */ }
       }
 
-      return { title, playerState, position, duration, genre, year };
+      return { title, playerState, position, duration, genre, year, show, seasonNumber, episodeNumber, episodeID };
     });
   } catch {
     return null;
